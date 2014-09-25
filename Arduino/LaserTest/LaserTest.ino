@@ -7,7 +7,7 @@ long long lastSendMillis;
 
 void setup() {
   pinMode(PIN_LED, OUTPUT);
-  Serial.begin(1200);
+  Serial.begin(57600);
   lastSendMillis = millis();
 }
 
@@ -21,14 +21,15 @@ void loop() {
 
   if(Serial.available()){
     int rv = Serial.read();
-    if(rv == 'p' || rv == 'n' || rv == 'g'){
+    if(rv == 'p' || rv == 'n'){
       Serial.write(rv-32);
     }
     else if(rv == 'i'){
       Serial.write('O');
     }
-    else if(rv == '\n'){
-      Serial.write(rv);
+    else if(rv == 'g'){
+      Serial.write('G');
+      Serial.write('\n');
     }
   }
 }
