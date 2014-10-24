@@ -30,13 +30,12 @@ Serial myPort;
  dataReading = myPort.readString();
  if(dataReading!=null){
     dataOutput = append(dataOutput, dataReading);
-    saveData(); 
   } 
 }
  
  
-void printData() {
-  myPort.write("saving to txt file...");
+void printSerialData() {
+  myPort.write(dataOutput);
 }
      
  
