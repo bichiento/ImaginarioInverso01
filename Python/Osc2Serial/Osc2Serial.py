@@ -1,54 +1,60 @@
 from time import sleep, time
+from threading import Thread
 from sys import exit
 from Queue import Queue
 from serial import Serial
-from liblo import *
+from OSC import OSCServer
 
 
 SERIAL_PORT_NAME = "/dev/ptyp1"
 SERIAL_BAUD_RATE = 57600
-SERIAL_WRITE_DELAY = 5.0
+SERIAL_WRITE_DELAY = 1.0
 
+OSC_IN_ADDRESS = "127.0.0.1"
+OSC_IN_PORT = 8888
 OSC_MESSAGE_PATH = "/imaginario/html"
 
-
-class OscServer(ServerThread):
-    def __init__(self):
-        ServerThread.__init__(self, 8888)
-
-    @make_method(OSC_MESSAGE_PATH, 's')
-    def look_callback(self, path, args):
-        print "%s : %s"%(path, args)
-        mQueue.put(args[0])
-
-    @make_method(None, None)
-    def default_callback(self, path, args):
-        print "%s"%path
+def _oscHandler(addr, tags, stuff, source):
+    if (addr == OSC_MESSAGE_PATH):
+        msg = stuff[0].decode('utf-8')
+        print "%s : %s"%(addr, msg)
+        mQueue.put(msg)
+    else:
+        print "%s"%(addr)
 
 def setup():
-    global mServer, mQueue, mLastLook, mSerial
+    global mServer, mQueue, mLastSerialWrite, mSerial, oscThread
 
     mQueue = Queue()
-    mLastLook = time()
+    mLastSerialWrite = time()
     mSerial = Serial(SERIAL_PORT_NAME, baudrate=SERIAL_BAUD_RATE, timeout=0.01)
 
-    try:
-        mServer = OscServer()
-        mServer.start()
-    except ServerError as e:
-        print str(e)
-        exit(0)
+    mServer = OSCServer((OSC_IN_ADDRESS, OSC_IN_PORT))
+    mServer.addMsgHandler('default', _oscHandler)
+    oscThread = Thread(target = mServer.serve_forever)
+    oscThread.start()
+    print "OSCServer ready"
 
 def loop():
-    global mLastLook
-    if((time()-mLastLook > WRITE_SERIAL_DELAY) and not mQueue.empty()):
-        mLastLook = time()
-        txt = mQueue.get()
-        mSerial.write(txt)
+    global mLastSerialWrite, mQueue
+
+    ## write serial
+    if((time()-mLastSerialWrite > SERIAL_WRITE_DELAY) and (not mQueue.empty())):
+        mLastSerialWrite = time()
+        txt = mQueue.get().encode('utf-8')
+        mSerial.write(txt+"\n")
+
+    ## read serial
+    msg = ""
+    for line in mSerial:
+        msg += line
+    if msg:
+        print msg
 
 def cleanUp():
     print  "Stoping OSCServer"
-    mServer.stop()
+    mServer.close()
+    oscThread.join()
     mSerial.close()
 
 if __name__=="__main__":
