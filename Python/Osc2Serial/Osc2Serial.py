@@ -1,49 +1,71 @@
 from time import sleep, time
 from threading import Thread
 from sys import exit
-from Queue import Queue
+from random import randint
 from serial import Serial
-from OSC import OSCServer
 from termcolor import colored, cprint
+from xml.dom import minidom
+from urllib2 import urlopen
 
-
-SERIAL_PORT_NAME = "/dev/ptyp1"
+SERIAL_PORT_NAME = "/dev/ptyp0"
 SERIAL_BAUD_RATE = 57600
 SERIAL_WRITE_DELAY = 1.0
 
-OSC_IN_ADDRESS = "127.0.0.1"
-OSC_IN_PORT = 8888
-OSC_MESSAGE_PATH = "/imaginario/html"
+MAX_QUEUE_SIZE = 64
 
-def _oscHandler(addr, tags, stuff, source):
-    if (addr == OSC_MESSAGE_PATH):
-        msg = stuff[0].decode('utf-8')
-        print "%s : %s"%(addr, msg)
-        mQueue.put(msg)
-    else:
-        print "%s"%(addr)
+def getDataFromXml():
+    url = "http://www.xmlfiles.com/examples/cd_catalog.xml"
+    xml = minidom.parseString(urlopen(url).read())
+
+    cds = xml.getElementsByTagName('CD')
+    cd = cds[randint(0,len(cds)-1)]
+    title = cd.getElementsByTagName('TITLE')[0].childNodes[0].nodeValue.decode('utf-8')
+    artist = cd.getElementsByTagName('ARTIST')[0].childNodes[0].nodeValue.decode('utf-8')
+    return (title, artist)
 
 def setup():
-    global mServer, mQueue, mLastSerialWrite, mSerial, oscThread
+    global mSerial, mQueue, mQueueReadIndex, mQueueWriteIndex, mLastSerialWrite
 
-    mQueue = Queue()
+    mSerial = Serial(SERIAL_PORT_NAME, baudrate=SERIAL_BAUD_RATE, timeout=0.01, writeTimeout=0.5)
+
+    mQueue = []
+    mQueueReadIndex = 0
+    mQueueWriteIndex = 0
     mLastSerialWrite = time()
-    mSerial = Serial(SERIAL_PORT_NAME, baudrate=SERIAL_BAUD_RATE, timeout=0.01)
-
-    mServer = OSCServer((OSC_IN_ADDRESS, OSC_IN_PORT))
-    mServer.addMsgHandler('default', _oscHandler)
-    oscThread = Thread(target = mServer.serve_forever)
-    oscThread.start()
-    print "OSCServer ready"
 
 def loop():
-    global mLastSerialWrite, mQueue
+    global mSerial, mQueue, mQueueReadIndex, mQueueWriteIndex, mLastSerialWrite
 
-    ## write serial
-    if((time()-mLastSerialWrite > SERIAL_WRITE_DELAY) and (not mQueue.empty())):
+    ## write to serial
+    if(time()-mLastSerialWrite > SERIAL_WRITE_DELAY):
         mLastSerialWrite = time()
-        txt = mQueue.get().encode('utf-8')
-        mSerial.write(txt+"\n")
+
+        ## get new piece of xml
+        try:
+            if(len(mQueue) < MAX_QUEUE_SIZE):
+                mQueue.append(getDataFromXml())
+            else:
+                mQueue[mQueueWriteIndex] = getDataFromXml()
+        except Exception as e:
+            print "couldn't get XML: "+str(e)
+        else:
+            mQueueReadIndex = mQueueWriteIndex
+            if(len(mQueue) < MAX_QUEUE_SIZE):
+                mQueueWriteIndex = len(mQueue)
+            else:
+                mQueueWriteIndex = (mQueueWriteIndex+1)%len(mQueue)
+
+        ## try to write to serial
+        if(len(mQueue) > 0):
+            try:
+                (txt,author) = mQueue[mQueueReadIndex]
+                txt = txt.encode('utf-8')
+                author = author.encode('utf-8')
+                mSerial.write(txt+"\n")
+            except Exception as e:
+                print "couldn't write to serial: "+str(e)
+            else:
+                mQueueReadIndex = (mQueueReadIndex+1)%len(mQueue)
 
     ## read serial
     msg = ""
@@ -61,9 +83,7 @@ def loop():
         cprint(msg, end='\n')
 
 def cleanUp():
-    print  "Stoping OSCServer"
-    mServer.close()
-    oscThread.join()
+    print  "Stoping Serial"
     mSerial.close()
 
 if __name__=="__main__":
