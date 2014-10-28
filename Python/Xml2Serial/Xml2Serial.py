@@ -26,6 +26,7 @@ def getDataFromXml():
 def setup():
     global mSerial, mQueue, mQueueReadIndex, mQueueWriteIndex, mLastSerialWrite
 
+    cprint("STARTING SERIAL PORT", 'green', attrs=['bold','reverse'], end='\n')
     mSerial = Serial(SERIAL_PORT_NAME, baudrate=SERIAL_BAUD_RATE, timeout=0.01, writeTimeout=0.5)
 
     mQueue = []
@@ -47,7 +48,8 @@ def loop():
             else:
                 mQueue[mQueueWriteIndex] = getDataFromXml()
         except Exception as e:
-            print "couldn't get XML: "+str(e)
+            cprint("COULDN'T READ XML:", 'red', attrs=['bold', 'reverse'], end='\n')
+            cprint(str(e), attrs=['bold'], end='\n')
         else:
             mQueueReadIndex = mQueueWriteIndex
             if(len(mQueue) < MAX_QUEUE_SIZE):
@@ -63,7 +65,8 @@ def loop():
                 author = author.encode('utf-8')
                 mSerial.write(txt+"\n")
             except Exception as e:
-                print "couldn't write to serial: "+str(e)
+                cprint("COULDN'T WRITE TO SERIAL PORT:", 'red', attrs=['bold', 'reverse'], end='\n')
+                cprint(str(e), attrs=['bold'], end='\n')
             else:
                 mQueueReadIndex = (mQueueReadIndex+1)%len(mQueue)
 
@@ -72,18 +75,15 @@ def loop():
     for line in mSerial:
         msg += line
     if msg:
-        cprint("CO", 'white', 'on_green', attrs=['bold'], end='')
+        cprint("ASTROVANDALISTAS * ", attrs=['bold', 'reverse'], end='  ')
+        cprint("CO", 'green', attrs=['bold','reverse'], end='')
         cprint("DE", 'grey', attrs=['bold'], end='')
-        cprint("PI", 'white', 'on_red',   attrs=['bold'], end='    ')
-        cprint(" * * * ASTROVANDALISTAS * * * ", attrs=['bold', 'reverse'], end='    ')
-        cprint("CO", 'white', 'on_green', attrs=['bold'], end='')
-        cprint("DE", 'grey', attrs=['bold'], end='')
-        cprint("PI", 'white', 'on_red',   attrs=['bold'], end='\n')
+        cprint("PI", 'red', attrs=['bold', 'reverse'], end='\n')
         cprint("OUTPUT", attrs=['bold', 'blink'], end=': ')
         cprint(msg, end='\n')
 
 def cleanUp():
-    print  "Stoping Serial"
+    cprint("STOPPING SERIAL PORT", 'red', attrs=['bold', 'reverse'], end='\n')
     mSerial.close()
 
 if __name__=="__main__":
@@ -99,6 +99,7 @@ if __name__=="__main__":
             cleanUp()
             exit(0)
         except Exception as e:
-            print "loop caught: "+str(e)
+            cprint("LOOP EXCEPTION CAUGHT:", 'red', attrs=['bold', 'reverse'], end='\n')
+            cprint(str(e), attrs=['bold'], end='\n')
             cleanUp()
             setup()
