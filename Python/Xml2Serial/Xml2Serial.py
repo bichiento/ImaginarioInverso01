@@ -75,10 +75,10 @@ def loop():
     for line in mSerial:
         msg += line
     if msg:
-        cprint("ASTROVANDALISTAS * ", attrs=['bold', 'reverse'], end='  ')
-        cprint("CO", 'green', attrs=['bold','reverse'], end='')
+        cprint(" ASTROVANDALISTAS * ", attrs=['bold', 'reverse'], end=' ')
+        cprint(" CO", 'green', attrs=['bold','reverse'], end='')
         cprint("DE", 'grey', attrs=['bold'], end='')
-        cprint("PI", 'red', attrs=['bold', 'reverse'], end='\n')
+        cprint("PI ", 'red', attrs=['bold', 'reverse'], end='\n')
         cprint("OUTPUT", attrs=['bold', 'blink'], end=': ')
         cprint(msg, end='\n')
 
