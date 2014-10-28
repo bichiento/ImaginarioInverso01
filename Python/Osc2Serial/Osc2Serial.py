@@ -4,6 +4,7 @@ from sys import exit
 from Queue import Queue
 from serial import Serial
 from OSC import OSCServer
+from termcolor import colored, cprint
 
 
 SERIAL_PORT_NAME = "/dev/ptyp1"
@@ -49,7 +50,15 @@ def loop():
     for line in mSerial:
         msg += line
     if msg:
-        print msg
+        cprint("CO", 'white', 'on_green', attrs=['bold'], end='')
+        cprint("DE", 'grey', attrs=['bold'], end='')
+        cprint("PI", 'white', 'on_red',   attrs=['bold'], end='    ')
+        cprint(" * * * ASTROVANDALISTAS * * * ", attrs=['bold', 'reverse'], end='    ')
+        cprint("CO", 'white', 'on_green', attrs=['bold'], end='')
+        cprint("DE", 'grey', attrs=['bold'], end='')
+        cprint("PI", 'white', 'on_red',   attrs=['bold'], end='\n')
+        cprint("OUTPUT", attrs=['bold', 'blink'], end=': ')
+        cprint(msg, end='\n')
 
 def cleanUp():
     print  "Stoping OSCServer"

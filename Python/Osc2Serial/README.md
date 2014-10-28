@@ -9,3 +9,5 @@ Simple python server that turns OSC messages into Serial messages
     wget https://trac.v2.nl/attachment/wiki/pyOSC/pyOSC-0.3.5b-5294.tar.gz -O - | tar -xz  
     cd pyOSC-0.3.5b-5294  
     sudo python setup.py install  
+####termcolor:  
+    sudo easy_install termcolor  
