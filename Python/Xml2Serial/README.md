@@ -1,4 +1,4 @@
-Simple python server that turns OSC messages into Serial messages  
+Simple python server that turns XML messages into Serial messages  
 
 ##Dependencies  
 ####pySerial:  
