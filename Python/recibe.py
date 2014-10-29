@@ -1,4 +1,7 @@
 import serial
+from time import sleep
 port = serial.Serial("/dev/ttyAMA0", 9600, 0.01)
-data = port.read(numberofbytes)
-print data
+while True:
+  data = port.readline()
+  sleep(0.1)
+  print data
